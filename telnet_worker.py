@@ -63,6 +63,14 @@ class TelnetWorker(QThread):
                 self.connection_error.emit(f"Send error: {str(e)}")
                 self.cleanup()
                 
+    def send_raw(self, data):
+        if self.sock and self.running:
+            try:
+                self.sock.sendall(data.encode('utf-8'))
+            except Exception as e:
+                self.connection_error.emit(f"Send raw error: {str(e)}")
+                self.cleanup()
+                
     def cleanup(self):
         self.running = False
         if self.sock:

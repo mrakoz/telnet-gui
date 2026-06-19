@@ -2,8 +2,8 @@ import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QSplitter, QListWidget, QPushButton, 
                              QLineEdit, QTextEdit, QLabel, QInputDialog, QMessageBox,
-                             QFormLayout, QDialog, QDialogButtonBox)
-from PyQt6.QtCore import Qt
+                             QFormLayout, QDialog, QDialogButtonBox, QCheckBox)
+from PyQt6.QtCore import Qt, QEvent
 from PyQt6.QtGui import QColor, QTextCursor, QTextCharFormat, QFont
 
 from storage import load_profiles, save_profiles, add_profile, edit_profile, delete_profile
@@ -160,12 +160,16 @@ class MainWindow(QMainWindow):
         self.btn_clear = QPushButton("Clear Log")
         self.btn_clear.clicked.connect(self.clear_current_log)
         
+        self.interactive_checkbox = QCheckBox("Interactive Mode")
+        self.interactive_checkbox.setStyleSheet("color: #abb2bf;")
+        
         conn_layout.addWidget(QLabel("Host:"))
         conn_layout.addWidget(self.ip_input)
         conn_layout.addWidget(QLabel("Port:"))
         conn_layout.addWidget(self.port_input)
         conn_layout.addWidget(self.btn_connect)
         conn_layout.addWidget(self.btn_clear)
+        conn_layout.addWidget(self.interactive_checkbox)
         
         right_layout.addLayout(conn_layout)
         
@@ -176,6 +180,7 @@ class MainWindow(QMainWindow):
         font = QFont("Consolas", 11)
         font.setStyleHint(QFont.StyleHint.Monospace)
         self.output_area.setFont(font)
+        self.output_area.installEventFilter(self)
         right_layout.addWidget(self.output_area)
         
         # Input Area
@@ -353,6 +358,17 @@ class MainWindow(QMainWindow):
         if self.worker:
             self.worker.stop()
         event.accept()
+
+    def eventFilter(self, obj, event):
+        if obj == self.output_area and event.type() == QEvent.Type.KeyPress:
+            if self.interactive_checkbox.isChecked() and self.worker and self.worker.running:
+                char = event.text()
+                if char:
+                    # Echo the character locally if needed? Telnet usually relies on server echo.
+                    # But for now we just send it.
+                    self.worker.send_raw(char)
+                    return True # Prevent text edit from handling it
+        return super().eventFilter(obj, event)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
