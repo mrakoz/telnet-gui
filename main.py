@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
                 
     def add_new_profile(self):
         dialog = ProfileDialog(self)
-        if dialog.exec():
+        if dialog.exec_():
             name, ip, port = dialog.get_data()
             if name and ip and port:
                 add_profile(name, ip, port)
@@ -245,7 +245,7 @@ class MainWindow(QMainWindow):
         p = self.profiles[index]
         
         dialog = ProfileDialog(self, p['name'], p['ip'], p['port'])
-        if dialog.exec():
+        if dialog.exec_():
             name, ip, port = dialog.get_data()
             if name and ip and port:
                 edit_profile(index, name, ip, port)
@@ -375,4 +375,4 @@ if __name__ == "__main__":
     app.setStyleSheet(STYLESHEET)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
