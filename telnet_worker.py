@@ -1,6 +1,6 @@
 import socket
 import select
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal
 
 class TelnetWorker(QThread):
     data_received = pyqtSignal(str)

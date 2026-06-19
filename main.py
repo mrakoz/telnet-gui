@@ -1,10 +1,10 @@
 import sys
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QSplitter, QListWidget, QPushButton, 
                              QLineEdit, QTextEdit, QLabel, QInputDialog, QMessageBox,
                              QFormLayout, QDialog, QDialogButtonBox, QCheckBox)
-from PyQt6.QtCore import Qt, QEvent
-from PyQt6.QtGui import QColor, QTextCursor, QTextCharFormat, QFont
+from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtGui import QColor, QTextCursor, QTextCharFormat, QFont
 
 from storage import load_profiles, save_profiles, add_profile, edit_profile, delete_profile
 from telnet_worker import TelnetWorker
@@ -81,7 +81,7 @@ class ProfileDialog(QDialog):
         
         self.layout.addLayout(self.form_layout)
         
-        self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
         
@@ -111,7 +111,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(main_widget)
         
         # Splitter for 1/3 and 2/3 layout
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter = QSplitter(Qt.Horizontal)
         layout.addWidget(splitter)
         
         # --- LEFT PANEL (1/3) ---
@@ -178,7 +178,7 @@ class MainWindow(QMainWindow):
         self.output_area.setReadOnly(True)
         # Use a nice monospaced font
         font = QFont("Consolas", 11)
-        font.setStyleHint(QFont.StyleHint.Monospace)
+        font.setStyleHint(QFont.Monospace)
         self.output_area.setFont(font)
         self.output_area.installEventFilter(self)
         right_layout.addWidget(self.output_area)
@@ -259,10 +259,10 @@ class MainWindow(QMainWindow):
         index = self.profile_list.row(selected_items[0])
         reply = QMessageBox.question(self, 'Delete Profile', 
                                      'Are you sure you want to delete this profile?',
-                                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
-                                     QMessageBox.StandardButton.No)
+                                     QMessageBox.Yes | QMessageBox.No, 
+                                     QMessageBox.No)
                                      
-        if reply == QMessageBox.StandardButton.Yes:
+        if reply == QMessageBox.Yes:
             delete_profile(index)
             self.refresh_profile_list()
 
@@ -334,7 +334,7 @@ class MainWindow(QMainWindow):
 
     def append_output(self, text, msg_type="server"):
         cursor = self.output_area.textCursor()
-        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.movePosition(QTextCursor.End)
         
         format = QTextCharFormat()
         
@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def eventFilter(self, obj, event):
-        if obj == self.output_area and event.type() == QEvent.Type.KeyPress:
+        if obj == self.output_area and event.type() == QEvent.KeyPress:
             if self.interactive_checkbox.isChecked() and self.worker and self.worker.running:
                 char = event.text()
                 if char:
