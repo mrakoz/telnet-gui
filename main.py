@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
         self.profile_list.clear()
         self.profiles = load_profiles()
         for p in self.profiles:
-            self.profile_list.addItem(f"{p['name']} ({p['ip']}:{p['port']})")
+            self.profile_list.addItem("{0} ({1}:{2})".format(p['name'], p['ip'], p['port']))
             
     def on_profile_selected(self):
         selected_items = self.profile_list.selectedItems()
@@ -310,7 +310,7 @@ class MainWindow(QMainWindow):
         self.reset_ui_after_disconnect()
         
     def on_connection_error(self, err_msg):
-        self.append_output(f"\n{err_msg}", "error")
+        self.append_output("\n{0}".format(err_msg), "error")
         self.reset_ui_after_disconnect()
         
     def reset_ui_after_disconnect(self):
@@ -328,7 +328,7 @@ class MainWindow(QMainWindow):
     def send_command(self):
         cmd = self.cmd_input.text()
         if self.worker and self.worker.running:
-            self.append_output(f"> {cmd}\n", "client")
+            self.append_output("> {0}\n".format(cmd), "client")
             self.worker.send_command(cmd)
             self.cmd_input.clear()
 

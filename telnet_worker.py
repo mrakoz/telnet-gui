@@ -21,9 +21,9 @@ class TelnetWorker(QThread):
         
         try:
             self.sock.connect((self.host, self.port))
-            self.data_received.emit(f"Connected to {self.host}:{self.port}\n")
+            self.data_received.emit("Connected to {0}:{1}\n".format(self.host, self.port))
         except Exception as e:
-            self.connection_error.emit(f"Failed to connect: {str(e)}")
+            self.connection_error.emit("Failed to connect: {0}".format(str(e)))
             self.running = False
             return
             
@@ -44,13 +44,13 @@ class TelnetWorker(QThread):
                         decoded_data = data.decode('utf-8', errors='replace')
                         self.data_received.emit(decoded_data)
                     except Exception as e:
-                        print(f"Decode error: {e}")
+                        print("Decode error: {0}".format(e))
                         
             except socket.timeout:
                 continue
             except Exception as e:
                 if self.running:
-                    self.connection_error.emit(f"Connection error: {str(e)}")
+                    self.connection_error.emit("Connection error: {0}".format(str(e)))
                 break
                 
         self.cleanup()
@@ -60,7 +60,7 @@ class TelnetWorker(QThread):
             try:
                 self.sock.sendall((cmd + '\r\n').encode('utf-8'))
             except Exception as e:
-                self.connection_error.emit(f"Send error: {str(e)}")
+                self.connection_error.emit("Send error: {0}".format(str(e)))
                 self.cleanup()
                 
     def send_raw(self, data):
@@ -68,7 +68,7 @@ class TelnetWorker(QThread):
             try:
                 self.sock.sendall(data.encode('utf-8'))
             except Exception as e:
-                self.connection_error.emit(f"Send raw error: {str(e)}")
+                self.connection_error.emit("Send raw error: {0}".format(str(e)))
                 self.cleanup()
                 
     def cleanup(self):

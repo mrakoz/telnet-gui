@@ -10,7 +10,7 @@ def load_profiles():
         with open(HOSTS_FILE, 'r') as f:
             return json.load(f)
     except Exception as e:
-        print(f"Error loading profiles: {e}")
+        print("Error loading profiles: {0}".format(e))
         return []
 
 def save_profiles(profiles):
@@ -18,7 +18,7 @@ def save_profiles(profiles):
         with open(HOSTS_FILE, 'w') as f:
             json.dump(profiles, f, indent=4)
     except Exception as e:
-        print(f"Error saving profiles: {e}")
+        print("Error saving profiles: {0}".format(e))
 
 def add_profile(name, ip, port):
     profiles = load_profiles()
