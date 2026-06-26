@@ -1,63 +1,154 @@
-# Development & AI Context Guide
+# Development Guide
 
-This document is intended for human developers and **AI Assistants (Agents)** who will work on this project in the future. It explains the core architecture, the build process, and the specific hacks we implemented to ensure 100% offline compatibility on Linux.
+This document explains how to build the **Telnet GUI** offline releases from scratch. The build process uses **WSL** (Windows Subsystem for Linux) with Ubuntu containers — the developer machine is Windows, the build environment is Linux under WSL.
 
-## 🤖 Note to Future AI Agents
-If you are an AI assistant starting a new conversation with the user to modify this utility:
-1. **Do NOT break the offline build system.** We specifically moved away from `.deb` packages and `apt` dependencies because the user requires this application to run on completely "naked" and offline Linux installations (e.g., barebones Lubuntu 16.04).
-2. **Do NOT suggest using package managers.** The app must remain a self-contained ZIP archive.
-3. Read the "Build Architecture" section carefully before modifying how the app starts.
+## Project Layout
 
-## Project Overview
-**Telnet GUI** is a fast, native, and modern Telnet client for Linux, built with Python 3 and PyQt5.
-- **UI Framework:** PyQt5.
-- **Networking:** Asynchronous thread-based engine to prevent UI freezing during slow connections.
+```
+C:\Users\Denis\Desktop\telnet-gui-project\
+├── main.py              # GUI (PyQt5)
+├── storage.py           # Profile storage, Export/Import
+├── telnet_worker.py     # Telnet engine (async thread)
+├── icon.png             # App icon
+├── README.md            # User documentation
+├── DEVELOPMENT_GUIDE.md # This file
+├── build_offline.sh     # Build script for 32-bit (i386) release
+├── build_offline_x64.sh # Build script for 64-bit (x86_64) release
+├── telnet-gui.deb       # Optional DEB package
+│
+├── telnet-gui-offline-32bit\   # Output: 32-bit offline build
+│   ├── telnet-gui               # PyInstaller binary
+│   ├── start.sh                 # Launcher wrapper
+│   └── libs/                    # Bundled XCB/Qt libraries
+│       └── platforms/
+│           └── libqxcb.so
+│
+└── telnet-gui-offline-x64\     # Output: 64-bit offline build
+    ├── telnet-gui
+    ├── start.sh
+    └── libs/
+        └── platforms/
+            └── libqxcb.so
+```
 
-## Build Architecture (Ultimate Offline Edition)
-The biggest challenge in this project was making the PyQt5 GUI run on minimal Linux systems without an internet connection. By default, PyInstaller does not bundle low-level X11/XCB graphics libraries, causing `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"` errors.
+## Build Architecture (Offline Edition)
 
-### The Solution: `start.sh` + `libs/` folder
-To solve this, we implemented a standalone "portable" architecture:
-1. **The Binary:** We compile the python code using PyInstaller (`pyinstaller --onefile ...`).
-2. **The Libraries (`libs/`):** We manually extracted all required XCB dependencies (e.g., `libqxcb.so`, `libxcb-xinerama.so.0`, `libQt5XcbQpa.so.5`) and placed them in a `libs` directory next to the executable.
-3. **The Wrapper (`start.sh`):** The user launches the app via `start.sh`. This script dynamically sets the `LD_LIBRARY_PATH` environment variable to point to our `libs/` folder.
+The app uses **PyInstaller** to compile Python + PyQt5 into a standalone executable. The tricky part is **XCB graphics libraries** — bare Linux systems often lack them, causing the infamous error:
 
-**Why this works:** Setting `LD_LIBRARY_PATH` forces the Linux dynamic linker to load our bundled libraries *first*. If the host system lacks an XCB library, the app seamlessly uses ours. 
+```
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb"
+```
 
-### Contents of `start.sh`
+### The Fix: `start.sh` + `libs/` folder
+
+1. **PyInstaller** compiles `main.py` into a static binary (`telnet-gui`)
+2. **Required `.so` libraries** are collected from the WSL system and placed in a `libs/` folder next to the binary
+3. **`start.sh`** launches the binary with `LD_LIBRARY_PATH` pointed at `libs/`, so the dynamic linker finds our bundled libraries first
+
+### `start.sh` wrapper
+
 ```bash
 #!/bin/bash
-# Get the absolute path of the directory containing this script
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# Force the system to look for libraries in our custom 'libs' folder first
 export LD_LIBRARY_PATH="$DIR/libs:$LD_LIBRARY_PATH"
-
-# Force Qt to look for platform plugins in the libs/platforms folder
 export QT_QPA_PLATFORM_PLUGIN_PATH="$DIR/libs/platforms"
-
-# Run the PyInstaller binary
 "$DIR/telnet-gui" "$@"
 ```
 
-## How to Create a Release
-If you need to compile a new version:
-1. Make sure you build on an older Linux system (e.g., Ubuntu 20.04 or 16.04) to ensure maximum forward compatibility with glibc versions.
-2. Setup a virtual environment:
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install pyqt5 pyinstaller
-   ```
-3. Compile the code:
-   ```bash
-   pyinstaller --onefile --windowed --name telnet-gui main.py
-   ```
-4. Package the resulting `telnet-gui` binary together with the `start.sh` script and the pre-existing `libs/` folder into a ZIP archive.
+## Build Process (WSL)
+
+Building is done inside **WSL** (Ubuntu) because PyInstaller must produce a Linux binary. The build scripts mount the Windows project folder via `/mnt/c/`, compile the code, collect libraries from `/usr/lib/`, and write the output back to the Windows filesystem.
+
+### Prerequisites (WSL Ubuntu)
+
+```bash
+# Inside WSL (Ubuntu 20.04 recommended for glibc compatibility)
+sudo apt update
+sudo apt install python3 python3-pip pyqt5-dev-tools \
+    libxcb-xinerama0 libxcb-icccm4 libxcb-image0 \
+    libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+    libxcb-shape0 libxcb-xfixes0 libxcb-xkb1 \
+    libxkbcommon-x11-0 libdbus-1-3
+
+# PyInstaller
+pip3 install pyinstaller --break-system-packages
+```
+
+### Building 32-bit (i386)
+
+**Additional setup:** 32-bit build requires a separate WSL instance with Ubuntu i386 or an i386 chroot.
+
+Run `build_offline.sh` inside the 32-bit WSL:
+
+```bash
+# Inside 32-bit WSL
+bash build_offline.sh
+```
+
+The script:
+1. Copies source files from the Windows project folder to `/root/build/`
+2. Runs `pyinstaller --onefile main.py -n telnet-gui`
+3. Copies `.so` libraries from `/usr/lib/i386-linux-gnu/` → output `libs/`
+4. Generates `start.sh`
+5. Output goes to `C:\Users\Denis\Desktop\telnet-gui-project\telnet-gui-offline-32bit\`
+
+### Building 64-bit (x86_64)
+
+Run `build_offline_x64.sh` inside a standard 64-bit WSL:
+
+```bash
+# Inside 64-bit WSL
+bash build_offline_x64.sh
+```
+
+Same process, but libraries come from `/usr/lib/x86_64-linux-gnu/`.
+
+### What the build script collects
+
+| Library path | Purpose |
+|-------------|---------|
+| `libQt5DBus.so.*` | Qt D-Bus |
+| `libQt5XcbQpa.so.*` | Qt XCB platform plugin |
+| `libdbus-1.so.*` | D-Bus transport |
+| `libxcb*.so.*` | X11 protocol libraries |
+| `libxkbcommon*.so.*` | Keyboard handling |
+| `libqxcb.so` | Qt platform plugin (→ `libs/platforms/`) |
+
+## Release Packaging
+
+After a successful build, the output directory contains everything needed:
+
+```
+telnet-gui-offline-32bit.zip   (or telnet-gui-offline-x64.zip)
+├── telnet-gui                  # Compiled binary (~15 MB)
+├── start.sh                    # Launcher
+├── libs/                       # Bundled system libraries
+│   ├── libQt5DBus.so.5
+│   ├── libQt5XcbQpa.so.5
+│   ├── libxcb*.so.*
+│   ├── libxkbcommon*.so.*
+│   └── platforms/
+│       └── libqxcb.so
+```
+
+Zip the folder and upload to GitHub Releases.
+
+## Offline Build Constraints
+
+- **Build on old glibc**: Ubuntu 20.04 is recommended — newer distros produce binaries that won't run on Lubuntu 16.04
+- **32-bit vs 64-bit**: Separate WSL instances are needed for each architecture
+- **No internet needed on target**: The entire app (binary + libs + launcher) fits in a ZIP that works on a bare offline Linux machine
 
 ## Debugging
-If the app fails to start on a new Linux system, run `start.sh` with maximum Qt logging enabled:
+
+If the app crashes on a new Linux system, run with verbose Qt logging:
+
 ```bash
 QT_DEBUG_PLUGINS=1 ./start.sh
 ```
-This will print exactly which `lib*.so` file is missing. You can then copy the missing library from a working system into the `libs/` folder.
+
+This prints exactly which `.so` file is missing. Copy the missing library from a working system into `libs/`.
+
+Common missing files:
+- `libxcb-xinerama.so.0` — many minimal systems lack this
+- `libxkbcommon-x11.so.0` — keyboard compositing
