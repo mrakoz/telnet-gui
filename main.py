@@ -2,11 +2,12 @@ import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QSplitter, QListWidget, QPushButton, 
                              QLineEdit, QTextEdit, QLabel, QInputDialog, QMessageBox,
-                             QFormLayout, QDialog, QDialogButtonBox, QCheckBox)
+                             QFormLayout, QDialog, QDialogButtonBox, QCheckBox,
+                             QFileDialog)
 from PyQt5.QtCore import Qt, QEvent
 from PyQt5.QtGui import QColor, QTextCursor, QTextCharFormat, QFont
 
-from storage import load_profiles, save_profiles, add_profile, edit_profile, delete_profile
+from storage import load_profiles, save_profiles, add_profile, edit_profile, delete_profile, export_profiles, import_profiles
 from telnet_worker import TelnetWorker
 
 # Dark Theme Stylesheet
@@ -139,6 +140,16 @@ class MainWindow(QMainWindow):
         
         left_layout.addLayout(btn_layout)
         
+        # Import / Export buttons
+        io_layout = QHBoxLayout()
+        self.btn_export = QPushButton("Export")
+        self.btn_import = QPushButton("Import")
+        self.btn_export.clicked.connect(self.export_profiles_handler)
+        self.btn_import.clicked.connect(self.import_profiles_handler)
+        io_layout.addWidget(self.btn_export)
+        io_layout.addWidget(self.btn_import)
+        left_layout.addLayout(io_layout)
+        
         # --- RIGHT PANEL (2/3) ---
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
@@ -265,6 +276,41 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             delete_profile(index)
             self.refresh_profile_list()
+
+    def export_profiles_handler(self):
+        """Export all profiles to a JSON file selected by the user."""
+        filepath, _ = QFileDialog.getSaveFileName(
+            self, "Export Server List", "",
+            "JSON Files (*.json);;All Files (*)")
+        if not filepath:
+            return
+        success, msg = export_profiles(filepath)
+        if success:
+            QMessageBox.information(self, "Export Successful", msg)
+        else:
+            QMessageBox.critical(self, "Export Failed", msg)
+
+    def import_profiles_handler(self):
+        """Import profiles from a JSON file selected by the user."""
+        filepath, _ = QFileDialog.getOpenFileName(
+            self, "Import Server List", "",
+            "JSON Files (*.json);;All Files (*)")
+        if not filepath:
+            return
+
+        # Ask whether to merge or replace
+        reply = QMessageBox.question(
+            self, 'Import Options',
+            'Merge with existing list? (Yes=merge, No=replace)',
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+
+        merge = (reply == QMessageBox.Yes)
+        success, msg = import_profiles(filepath, merge=merge)
+        if success:
+            self.refresh_profile_list()
+            QMessageBox.information(self, "Import Successful", msg)
+        else:
+            QMessageBox.critical(self, "Import Failed", msg)
 
     def toggle_connection(self):
         if self.worker and self.worker.running:
