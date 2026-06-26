@@ -3,15 +3,19 @@ set -e
 
 echo "Starting 64-bit build..."
 
+# === ADJUST THIS PATH to match your WSL mount of the project folder ===
+PROJECT_DIR="/mnt/c/Users/<YOUR_USER>/Desktop/telnet-gui-project"
+# ===================================================================
+
 # Clean and prepare build dir
 rm -rf /tmp/telnet-build-x64
 mkdir -p /tmp/telnet-build-x64
 
 # Copy source from the Windows project root
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/main.py /tmp/telnet-build-x64/
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/storage.py /tmp/telnet-build-x64/
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/telnet_worker.py /tmp/telnet-build-x64/
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/icon.png /tmp/telnet-build-x64/
+cp -r "$PROJECT_DIR"/main.py /tmp/telnet-build-x64/
+cp -r "$PROJECT_DIR"/storage.py /tmp/telnet-build-x64/
+cp -r "$PROJECT_DIR"/telnet_worker.py /tmp/telnet-build-x64/
+cp -r "$PROJECT_DIR"/icon.png /tmp/telnet-build-x64/
 cd /tmp/telnet-build-x64
 
 # Ensure PyInstaller is available
@@ -22,7 +26,7 @@ echo "Running PyInstaller..."
 LC_ALL=C python3 -m PyInstaller --onefile main.py -n telnet-gui
 
 # Create output directories on the Windows side
-OUTDIR="/mnt/c/Users/Denis/Desktop/telnet-gui-project/telnet-gui-offline-x64"
+OUTDIR="$PROJECT_DIR/telnet-gui-offline-x64"
 rm -rf "$OUTDIR"
 mkdir -p "$OUTDIR/libs"
 

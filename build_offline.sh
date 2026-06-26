@@ -3,15 +3,19 @@ set -e
 
 echo "Starting 32-bit build..."
 
+# === ADJUST THIS PATH to match your WSL mount of the project folder ===
+PROJECT_DIR="/mnt/c/Users/<YOUR_USER>/Desktop/telnet-gui-project"
+# ===================================================================
+
 # Clean and prepare build dir
 rm -rf /root/build
 mkdir -p /root/build
 
 # Copy source from the Windows project root
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/main.py /root/build/
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/storage.py /root/build/
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/telnet_worker.py /root/build/
-cp -r /mnt/c/Users/Denis/Desktop/telnet-gui-project/icon.png /root/build/
+cp -r "$PROJECT_DIR"/main.py /root/build/
+cp -r "$PROJECT_DIR"/storage.py /root/build/
+cp -r "$PROJECT_DIR"/telnet_worker.py /root/build/
+cp -r "$PROJECT_DIR"/icon.png /root/build/
 cd /root/build
 
 # Build the executable using PyInstaller
@@ -19,7 +23,7 @@ echo "Running PyInstaller..."
 LC_ALL=C python3 -m PyInstaller --onefile main.py -n telnet-gui
 
 # Create output directories on the Windows side
-OUTDIR="/mnt/c/Users/Denis/Desktop/telnet-gui-project/telnet-gui-offline-32bit"
+OUTDIR="$PROJECT_DIR/telnet-gui-offline-32bit"
 rm -rf "$OUTDIR"
 mkdir -p "$OUTDIR/libs"
 

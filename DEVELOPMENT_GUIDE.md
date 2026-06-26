@@ -5,7 +5,7 @@ This document explains how to build the **Telnet GUI** offline releases from scr
 ## Project Layout
 
 ```
-C:\Users\Denis\Desktop\telnet-gui-project\
+~/telnet-gui-project/
 ├── main.py              # GUI (PyQt5)
 ├── storage.py           # Profile storage, Export/Import
 ├── telnet_worker.py     # Telnet engine (async thread)
@@ -90,7 +90,7 @@ The script:
 2. Runs `pyinstaller --onefile main.py -n telnet-gui`
 3. Copies `.so` libraries from `/usr/lib/i386-linux-gnu/` → output `libs/`
 4. Generates `start.sh`
-5. Output goes to `C:\Users\Denis\Desktop\telnet-gui-project\telnet-gui-offline-32bit\`
+5. Output goes to `~/telnet-gui-project/telnet-gui-offline-32bit/`
 
 ### Building 64-bit (x86_64)
 
